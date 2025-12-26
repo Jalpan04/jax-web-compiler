@@ -6,12 +6,27 @@
     <title>JAX_COMPILER // RAW_ARCH</title>
     <style>
         :root {
-            --bg-color: #e0e0e0; /* Concrete Grey */
-            --panel-bg: #f5f5f5; /* Off-White */
-            --text-color: #1a1a1a; /* Soft Black */
+            /* Light Theme (Default) */
+            --bg-color: #e0e0e0;
+            --panel-bg: #f5f5f5;
+            --text-color: #1a1a1a;
             --border-color: #000000;
+            --btn-bg: #000000;
+            --btn-text: #ffffff;
+            --accent: #000000;
             --border-width: 2px;
             --spacing: 24px;
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme */
+            --bg-color: #121212;
+            --panel-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #ffffff;
+            --btn-bg: #ffffff;
+            --btn-text: #000000;
+            --accent: #ffffff;
         }
 
         * {
@@ -35,6 +50,7 @@
                               linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
             background-size: 40px 40px;
             background-position: -1px -1px;
+            transition: background-color 0.3s, color 0.3s;
         }
 
         /* Header */
@@ -44,7 +60,7 @@
             padding: 16px;
             display: flex;
             justify-content: space-between;
-            align-items: baseline;
+            align-items: center;
             z-index: 10;
         }
 
@@ -56,11 +72,36 @@
             letter-spacing: -0.5px;
         }
 
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
         .meta-info {
             font-family: 'Courier New', Courier, monospace;
             font-size: 0.9rem;
             border-left: var(--border-width) solid var(--border-color);
             padding-left: 16px;
+            text-transform: uppercase;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            background: transparent;
+            border: var(--border-width) solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 16px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            box-shadow: 4px 4px 0px var(--border-color);
+        }
+        
+        .theme-toggle:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px var(--border-color);
         }
 
         /* Main Grid */
@@ -69,7 +110,7 @@
             grid-template-columns: 1fr 1fr;
             gap: var(--spacing);
             height: 100%;
-            min-height: 0; /* Prevents overflow issues */
+            min-height: 0;
         }
 
         /* Panels */
@@ -79,7 +120,7 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            box-shadow: 8px 8px 0px rgba(0,0,0,0.1); /* Subtle depth */
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.1);
         }
 
         .panel-label {
@@ -88,6 +129,7 @@
             left: 16px;
             background: var(--bg-color);
             border: var(--border-width) solid var(--border-color);
+            color: var(--text-color);
             padding: 2px 8px;
             font-size: 0.8rem;
             font-weight: 700;
@@ -111,13 +153,17 @@
         }
 
         textarea:focus {
-            background: #fff;
+            background: rgba(0,0,0,0.05);
+        }
+        
+        [data-theme="dark"] textarea:focus {
+             background: rgba(255,255,255,0.05);
         }
 
         #outputDisplay {
             white-space: pre-wrap;
             overflow-y: auto;
-            border-left: var(--border-width) solid var(--border-color); /* Inner divider */
+            border-left: var(--border-width) solid var(--border-color);
         }
 
         /* Actions */
@@ -126,12 +172,12 @@
             padding: 16px;
             display: flex;
             justify-content: flex-end;
-            background: #fff;
+            background: var(--panel-bg);
         }
 
-        button {
-            background: #000;
-            color: #fff;
+        button.run-btn {
+            background: var(--btn-bg);
+            color: var(--btn-text);
             border: none;
             padding: 12px 32px;
             font-family: inherit;
@@ -142,18 +188,18 @@
             transition: all 0.2s;
         }
 
-        button:hover {
-            background: #333;
+        button.run-btn:hover {
+            opacity: 0.9;
             transform: translateY(-2px);
             box-shadow: 0 4px 0 rgba(0,0,0,0.2);
         }
 
-        button:active {
+        button.run-btn:active {
             transform: translateY(0);
             box-shadow: none;
         }
 
-        button:disabled {
+        button.run-btn:disabled {
             background: #999;
             cursor: not-allowed;
             transform: none;
@@ -194,9 +240,12 @@
 
     <header>
         <h1>Jax Web Compiler</h1>
-        <div class="meta-info">
-            BUILD: 2.0.ARCH<br>
-            MODE: UNSAFE
+        <div class="header-controls">
+            <button id="themeToggle" class="theme-toggle">Theme: Light</button>
+            <div class="meta-info">
+                BUILD: 2.1.DARK<br>
+                MODE: UNSAFE
+            </div>
         </div>
     </header>
 
@@ -206,7 +255,7 @@
             <span class="panel-label">Source_Input_01</span>
             <textarea id="codeInput" spellcheck="false" placeholder="// ENTER PYTHON CODE...">print("Architectural Brutalism")</textarea>
             <div class="actions">
-                <button id="runBtn">Execute Sequence</button>
+                <button id="runBtn" class="run-btn">Execute Sequence</button>
             </div>
         </article>
 
@@ -227,6 +276,19 @@
         const codeInput = document.getElementById('codeInput');
         const outputDisplay = document.getElementById('outputDisplay');
         const statusText = document.getElementById('status-text');
+        const themeToggle = document.getElementById('themeToggle');
+
+        // Theme Logic
+        const currentTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', currentTheme);
+        themeToggle.innerText = currentTheme === 'dark' ? 'Theme: Dark' : 'Theme: Light';
+
+        themeToggle.addEventListener('click', () => {
+            const newTheme = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            themeToggle.innerText = newTheme === 'dark' ? 'Theme: Dark' : 'Theme: Light';
+        });
 
         // Tab support
         codeInput.addEventListener('keydown', function(e) {
