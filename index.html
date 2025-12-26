@@ -1,139 +1,298 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JAX Compiler</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RAW_COMPILER_V1</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #0f172a;
-            font-family: 'Inter', sans-serif;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .glass {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        textarea {
-            font-family: 'Fira Code', monospace;
-            color: white;
-        }
-        .neon-text {
-            text-shadow: 0 0 10px rgba(34, 211, 238, 0.8);
-        }
-    </style>
-</head>
-<body class="text-white">
-    <div class="flex w-[90%] h-[90vh] glass p-6">
-        <!-- Left Panel (Code Editor) -->
-        <div class="flex-1 bg-gray-900 p-4 rounded-xl flex flex-col">
-            <div class="flex justify-between items-center mb-4">
-               <h3 class="text-2xl font-bold text-teal-300 neon-text">Code Editor:</h3>
-                <button id="runBtn" type="button" class="bg-teal-400 text-gray-900 px-6 py-2 rounded-lg hover:bg-teal-500 transition-all duration-300 shadow-lg flex items-center gap-2">
-                    <i class="fas fa-play"></i> Run
-                </button>
-            </div>
-            <form id="codeForm" class="flex-grow">
-                <textarea id="codeInput" name="code" spellcheck="false" autocorrect="off" autocomplete="off" autocapitalize="off"
-                class="w-full h-full p-3 bg-gray-800 text-white rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-teal-400 transition-all duration-200"
-                placeholder="Write your Python code here...">{{ code if code else '' }}</textarea>
-            </form>
-        </div>
+      :root {
+        --bg: #ff00ff; /* Magenta */
+        --fg: #000000;
+        --accent: #ffff00; /* Yellow */
+        --terminal: #000000;
+        --term-text: #00ff00; /* Green */
+      }
 
-        <!-- Right Panel (Output) -->
-        <div class="flex-1 bg-gray-800 p-4 rounded-xl ml-6 flex flex-col">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-bold text-teal-300 neon-text">Output:</h2>
-                <button type="button" class="bg-red-400 text-gray-900 px-6 py-2 rounded-lg hover:bg-red-500 transition-all duration-300 shadow-lg flex items-center gap-2" onclick="clearEditor()">
-                    <i class="fas fa-trash"></i> Clear
-                </button>
-            </div>
-            <div class="bg-gray-900 p-4 rounded-lg h-full overflow-y-auto shadow-inner" id="outputDisplay">
-                {% if output %}
-                    <pre class="text-teal-300">{{ output }}</pre>
-                {% endif %}
-                {% if error %}
-                    <h2 class="text-red-400">Error:</h2>
-                    <pre class="text-red-300">{{ error }}</pre>
-                {% endif %}
-            </div>
+      * {
+        box-sizing: border-box;
+        border-radius: 0 !important; /* No rounded corners, ever */
+      }
+
+      body {
+        background-color: var(--bg);
+        color: var(--fg);
+        font-family: "Courier New", Courier, monospace;
+        margin: 0;
+        padding: 20px;
+        height: 100vh;
+        display: grid;
+        grid-template-rows: auto 1fr;
+        gap: 20px;
+        overflow: hidden;
+      }
+
+      header {
+        background: #fff;
+        border: 5px solid #000;
+        padding: 10px;
+        box-shadow: 10px 10px 0px #000;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      h1 {
+        margin: 0;
+        text-transform: uppercase;
+        font-weight: 900;
+        font-size: 2rem;
+        letter-spacing: -2px;
+      }
+
+      .marquee-container {
+        background: #000;
+        color: #fff;
+        overflow: hidden;
+        white-space: nowrap;
+        border: 3px solid #000;
+        margin-bottom: 20px;
+        font-weight: bold;
+      }
+
+      .marquee-content {
+        display: inline-block;
+        padding-left: 100%;
+        animation: marquee 15s linear infinite;
+      }
+
+      @keyframes marquee {
+        0% {
+          transform: translate(0, 0);
+        }
+        100% {
+          transform: translate(-100%, 0);
+        }
+      }
+
+      .main-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        height: 100%;
+      }
+
+      .panel {
+        border: 5px solid #000;
+        background: #fff;
+        box-shadow: 15px 15px 0px #000;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        transition: transform 0.1s;
+      }
+
+      .panel:active {
+        transform: translate(2px, 2px);
+        box-shadow: 13px 13px 0px #000;
+      }
+
+      .panel-header {
+        background: #000;
+        color: #fff;
+        padding: 5px 10px;
+        font-weight: bold;
+        text-transform: uppercase;
+        border-bottom: 5px solid #000;
+      }
+
+      textarea {
+        width: 100%;
+        height: 100%;
+        background: #fff;
+        color: #000;
+        border: none;
+        padding: 20px;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 1.1rem;
+        resize: none;
+        outline: none;
+      }
+
+      textarea:focus {
+        background: #f0f0f0;
+      }
+
+      #outputDisplay {
+        background: var(--terminal);
+        color: var(--term-text);
+        padding: 20px;
+        font-family: "Lucida Console", Monaco, monospace;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        flex-grow: 1;
+      }
+
+      .controls {
+        position: absolute;
+        bottom: -30px;
+        right: 0;
+        z-index: 10;
+      }
+
+      button {
+        background: var(--accent);
+        border: 4px solid #000;
+        padding: 15px 40px;
+        font-family: inherit;
+        font-size: 1.5rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        cursor: pointer;
+        box-shadow: 8px 8px 0px #000;
+        transition: all 0.1s;
+        margin-left: 10px;
+      }
+
+      button:hover {
+        transform: translate(-2px, -2px);
+        box-shadow: 10px 10px 0px #000;
+        background: #fff;
+      }
+
+      button:active {
+        transform: translate(4px, 4px);
+        box-shadow: 4px 4px 0px #000;
+      }
+
+      .glitch {
+        position: relative;
+      }
+
+      .status-bar {
+        grid-column: 1 / -1;
+        background: #fff;
+        border: 3px solid #000;
+        padding: 5px;
+        font-size: 12px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      /* Mobile adjustments */
+      @media (max-width: 768px) {
+        .main-layout {
+          grid-template-columns: 1fr;
+          grid-template-rows: 1fr 1fr;
+        }
+        body {
+          overflow: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>
+        Jax<span style="color: red">_</span>Web<span style="color: blue">_</span
+        >Compiler
+      </h1>
+      <div style="font-weight: bold">
+        STATUS: <span id="status-text">IDLE</span>
+      </div>
+    </header>
+
+    <div class="marquee-container">
+      <div class="marquee-content">
+        WARNING: SYSTEM IS RUNNING IN UNSAFE MODE // DO NOT EXECUTE MALICIOUS
+        CODE // ALL ACTIONS ARE LOGGED // BRUTALISM MODE ACTIVE //
+      </div>
+    </div>
+
+    <div class="main-layout">
+      <div class="panel">
+        <div class="panel-header">Input_Zone</div>
+        <textarea
+          id="codeInput"
+          spellcheck="false"
+          placeholder="Write Python Code Here..."
+        >
+print("Hello Brutal World")</textarea
+        >
+        <div class="controls">
+          <button id="runBtn">EXECUTE</button>
         </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">System_Output</div>
+        <div id="outputDisplay">Waiting for signal...</div>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <span>MEM: OK</span>
+      <span>CPU: OK</span>
+      <span>UPTIME: FOREVER</span>
     </div>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            document.getElementById("runBtn").addEventListener("click", executeCode);
-            document.getElementById("codeForm").addEventListener("submit", function (event) {
-                event.preventDefault();
-                executeCode();
-            });
-        });
+      const runBtn = document.getElementById("runBtn");
+      const codeInput = document.getElementById("codeInput");
+      const outputDisplay = document.getElementById("outputDisplay");
+      const statusText = document.getElementById("status-text");
 
-        function executeCode() {
-            const code = document.getElementById("codeInput").value;
-            const runBtn = document.getElementById("runBtn");
-            runBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
-            runBtn.disabled = true;
-
-            document.getElementById("outputDisplay").innerHTML = "<pre class='text-teal-300'>Running...</pre>";
-
-            fetch('/run', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                body: new URLSearchParams({ 'code': code })
-            })
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const outputText = doc.querySelector("pre") ? doc.querySelector("pre").innerText : "No output";
-                const errorText = doc.querySelector(".error") ? doc.querySelector(".error").innerText : "";
-
-                document.getElementById("outputDisplay").innerHTML = `<pre class='text-teal-300'>${outputText || errorText || "No output"}</pre>`;
-                runBtn.innerHTML = '<i class="fas fa-play"></i> Run';
-                runBtn.disabled = false;
-            })
-            .catch(err => {
-                document.getElementById("outputDisplay").innerHTML = `<pre class='text-red-400'>Error: ${err.message}</pre>`;
-                runBtn.innerHTML = '<i class="fas fa-play"></i> Run';
-                runBtn.disabled = false;
-            });
+      // Tab support
+      codeInput.addEventListener("keydown", function (e) {
+        if (e.key == "Tab") {
+          e.preventDefault();
+          var start = this.selectionStart;
+          var end = this.selectionEnd;
+          this.value =
+            this.value.substring(0, start) + "\t" + this.value.substring(end);
+          this.selectionStart = this.selectionEnd = start + 1;
         }
+      });
 
-                document.getElementById("codeInput").addEventListener("keydown", function (event) {
-            if (event.key === "Tab") {
-                event.preventDefault();  // Prevent tab from changing focus
+      runBtn.addEventListener("click", async () => {
+        const code = codeInput.value;
 
-                let start = this.selectionStart;
-                let end = this.selectionEnd;
-                let value = this.value;
+        // Visual feedback
+        statusText.innerText = "PROCESSING...";
+        statusText.style.color = "blue";
+        outputDisplay.innerText = "> Initializing...\n> Sending packet...";
+        runBtn.disabled = true;
 
-                // Insert tab (or spaces) at the cursor position
-                this.value = value.substring(0, start) + "\t" + value.substring(end);
+        try {
+          const formData = new URLSearchParams();
+          formData.append("code", code);
 
-                // Move cursor after the inserted tab
-                this.selectionStart = this.selectionEnd = start + 1;
-            }
-        });
+          const response = await fetch("/run", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: formData,
+          });
 
+          const data = await response.json();
 
-        function clearEditor() {
-            document.getElementById("codeInput").value = '';
-            document.getElementById("outputDisplay").innerHTML = '';
+          if (data.error) {
+            outputDisplay.innerText = "> ABORT!\n\n" + data.error;
+            outputDisplay.style.color = "red";
+            statusText.innerText = "ERROR";
+            statusText.style.color = "red";
+          } else {
+            outputDisplay.innerText = "> SUCCESS.\n\n" + data.output;
+            outputDisplay.style.color = "#00ff00"; // Terminal green
+            statusText.innerText = "IDLE";
+            statusText.style.color = "black";
+          }
+        } catch (err) {
+          outputDisplay.innerText = "> SYSTEM FAILURE.\n" + err;
+          statusText.innerText = "CRITICAL";
+          statusText.style.color = "red";
+        } finally {
+          runBtn.disabled = false;
         }
+      });
     </script>
-</body>
+  </body>
 </html>

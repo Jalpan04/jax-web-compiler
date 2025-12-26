@@ -1,55 +1,53 @@
 import subprocess
 import sys
 import os
+import uuid
 from flask import Flask, render_template, request, jsonify
-from werkzeug.utils import secure_filename
 from flask_cors import CORS
 
-app = Flask(__name__, template_folder=os.getcwd())
-CORS(app)  # Enable CORS to allow cross-origin requests
+app = Flask(__name__, template_folder=os.getcwd(), static_folder='assets')
+CORS(app)
 
 @app.route('/')
 def index():
-    return render_template('index.html')  # Serve the frontend
+    return render_template('index.html')
 
 @app.route('/run', methods=['POST'])
 def run_code():
-    if request.method == 'POST':
-        code = request.form.get('code')
+    code = request.form.get('code')
+    if not code:
+        return jsonify({'output': '', 'error': 'No code provided!'})
 
-        if not code:
-            return render_template('index.html', error="No code provided!", code=code)
+    # Use a unique filename for each request to allow concurrency
+    unique_id = str(uuid.uuid4())
+    filename = f"temp_code_{unique_id}.py"
+    
+    try:
+        with open(filename, 'w') as file:
+            file.write(code)
 
-        # Secure filename
-        filename = "temp_code.py"
-        safe_filename = secure_filename(filename)
+        result = subprocess.run(
+            [sys.executable, filename],
+            capture_output=True, text=True, timeout=5
+        )
 
-        try:
-            # Save code in a temporary file
-            with open(safe_filename, 'w') as file:
-                file.write(code)
+        output = result.stdout
+        error = result.stderr if result.returncode != 0 else None
+        
+        # If there was a timeout, subprocess.run raises TimeoutExpired, catch it below
+        
+    except subprocess.TimeoutExpired:
+        output = ""
+        error = "Error: Timeout exceeded (5s limit)."
+    except Exception as e:
+        output = ""
+        error = f"System Error: {str(e)}"
+    finally:
+        if os.path.exists(filename):
+            os.remove(filename)
 
-            # Execute the code safely with a timeout
-            result = subprocess.run(
-                [sys.executable, safe_filename],
-                capture_output=True, text=True, timeout=5
-            )
-
-            output = result.stdout if result.returncode == 0 else None
-            error = result.stderr if result.returncode != 0 else None
-
-        except subprocess.TimeoutExpired:
-            output = None
-            error = "Error: Timeout exceeded while executing the code."
-        except Exception as e:
-            output = None
-            error = f"An unexpected error occurred: {str(e)}"
-        finally:
-            # Remove the temporary file after execution
-            if os.path.exists(safe_filename):
-                os.remove(safe_filename)
-
-        return render_template('index.html', code=code, output=output, error=error)
+    return jsonify({'output': output, 'error': error})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
