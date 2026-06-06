@@ -1,5 +1,7 @@
 # JAX Web Compiler
 
+![GitHub top language](https://img.shields.io/github/languages/top/Jalpan04/jax-web-compiler) ![GitHub repo size](https://img.shields.io/github/repo-size/Jalpan04/jax-web-compiler) [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 A sleek, web-based Python code editor and execution environment with a modern glass-morphic UI design.
 
 ## ✨ Features
