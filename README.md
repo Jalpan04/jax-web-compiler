@@ -119,3 +119,7 @@ If you have any questions or suggestions, please open an issue or contact the re
 ---
 
 Made with ❤️ using Flask and modern web technologies
+
+## License
+
+This project is licensed under the Apache-2.0 License - see the [LICENSE](LICENSE) file for details.
